@@ -175,8 +175,9 @@
         const errorModal = document.getElementById('errorModal');
         const errorMessage = document.getElementById('errorMessage');
 
-        // GAS API URL
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwZ3iWZCYGoIPxKcr1KIYqk_8Hi1Fd4DY1Y6fL8Wlg/dev';
+        // ⚠️ קריטי: הכנס כאן את הקישור שמתקבל אחרי פריסה מחדש (New Deployment) 
+        // ודא שהקישור מסתיים ב- /exec ולא ב- /dev!
+        const API_URL = 'הכנס_כאן_את_הקישור_שלך';
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -192,7 +193,6 @@
 
             // Gather values and format
             const rawTickers = document.getElementById('tickers').value;
-            // Clean up tickers: split by comma, trim spaces, remove empty strings, convert to uppercase
             const tickers = rawTickers.split(',')
                                       .map(t => t.trim().toUpperCase())
                                       .filter(t => t.length > 0);
@@ -201,7 +201,7 @@
             const endDate = document.getElementById('endDate').value;
             const frequency = document.getElementById('frequency').value;
 
-            // Date validation (Ensure start is before end)
+            // Date validation
             if(new Date(startDate) > new Date(endDate)) {
                 showError("תאריך ההתחלה לא יכול להיות מאוחר מתאריך הסיום.");
                 resetUI();
@@ -216,18 +216,18 @@
             };
 
             try {
-                // Fetch request
-                // Using text/plain is a well-known trick to bypass CORS preflight (OPTIONS) in Google Apps Script
+                // Fetch request with 'redirect: follow' explicitly set
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8',
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    redirect: 'follow' // פותר את בעיית ההפניות של גוגל
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`שגיאת HTTP! סטטוס: ${response.status}`);
                 }
 
                 const data = await response.json();
@@ -246,7 +246,7 @@
 
             } catch (error) {
                 console.error('API Error:', error);
-                showError(`אירעה שגיאה בחיבור לשרת או בעיבוד הנתונים: <br><br><strong>${error.message}</strong>`);
+                showError(`אירעה שגיאה בחיבור לשרת או בעיבוד הנתונים. <br><br><strong>וודא שהחלפת לקישור /exec ושהגדרת "Anyone" בהרשאות!</strong><br><br>פרטים מורחבים: ${error.message}`);
             } finally {
                 resetUI();
             }
@@ -265,14 +265,12 @@
             headers.forEach(header => {
                 const th = document.createElement('th');
                 th.className = 'px-6 py-3 text-right';
-                // Set explicitly left-to-right for tickers so English letters sit correctly
                 th.innerHTML = `<span dir="ltr">${header}</span>`;
                 trHead.appendChild(th);
             });
             tableHead.appendChild(trHead);
 
             // Render Body (Rows 1 to 5)
-            // Start from index 1, max up to length or 6
             const maxRows = Math.min(previewData.length, 6); 
             for (let i = 1; i < maxRows; i++) {
                 const row = previewData[i];
@@ -284,10 +282,8 @@
                     td.className = 'px-6 py-4 whitespace-nowrap';
                     
                     if (index === 0) {
-                        // Date column
                         td.innerHTML = `<span class="font-medium text-slate-800" dir="ltr">${cell}</span>`;
                     } else {
-                        // Value columns (Prices)
                         const val = cell !== "" ? parseFloat(cell).toFixed(2) : "-";
                         td.innerHTML = `<span dir="ltr">${val}</span>`;
                     }
@@ -315,7 +311,7 @@
             loadingState.classList.remove('flex');
         }
 
-        // Default Dates Setup (e.g., Last 1 Year)
+        // Default Dates Setup
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
             const lastYear = new Date();
